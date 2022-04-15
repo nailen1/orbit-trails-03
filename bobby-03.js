@@ -1,9 +1,17 @@
 import * as THREE from "three";
+import { GUI } from '../examples/jsm/libs/lil-gui.module.min.js';
 import { OrbitControls } from "../examples/jsm/controls/OrbitControls.js";
 import { EffectComposer } from "../examples/jsm/postprocessing/EffectComposer.js";
 import { RenderPass } from "../examples/jsm/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "../examples/jsm/postprocessing/UnrealBloomPass.js";
 import { AfterimagePass } from "../examples/jsm/postprocessing/AfterimagePass.js";
+
+
+const params = {
+    bloomStrength: 1.5,
+    bloomThreshold: 0,
+    bloomRadius: 0
+};
 
 let w = window.innerWidth;
 let h = window.innerHeight;
@@ -28,7 +36,7 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.target.set(0, 0, 0);
 controls.update();
 
-const ballGeo = new THREE.IcosahedronBufferGeometry(8, 1);
+const ballGeo = new THREE.IcosahedronBufferGeometry(8, 10);
 // const ballMat = new THREE.MeshBasicMaterial({ wireframe: true, color: 0xffffff });
 // const mesh = new THREE.Mesh(ballGeo, ballMat);
 // scene.add(mesh);
@@ -70,4 +78,24 @@ function handleWindowResize() {
     renderer.setSize(w, h);
 
 }
+
+const gui = new GUI();
+
+gui.add(params, 'bloomThreshold', 0.0, 1.0).onChange(function(value) {
+
+    bloomPass.threshold = Number(value);
+
+});
+
+gui.add(params, 'bloomStrength', 0.0, 20.0).onChange(function(value) {
+
+    bloomPass.strength = Number(value);
+
+});
+
+gui.add(params, 'bloomRadius', 0.0, 1.0).step(0.01).onChange(function(value) {
+
+    bloomPass.radius = Number(value);
+
+});
 window.addEventListener('resize', handleWindowResize, false);
