@@ -1,44 +1,63 @@
 import * as THREE from "three";
+import { OrbitControls } from "../examples/jsm/controls/OrbitControls.js";
+import { EffectComposer } from "../examples/jsm/postprocessing/EffectComposer.js";
+import { RenderPass } from "../examples/jsm/postprocessing/RenderPass.js";
+import { UnrealBloomPass } from "../examples/jsm/postprocessing/UnrealBloomPass.js";
+import { AfterimagePass } from "../examples/jsm/postprocessing/AfterimagePass.js";
 
 let w = window.innerWidth;
 let h = window.innerHeight;
 const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x000000, 0.05);
 const camera = new THREE.PerspectiveCamera(75, w / h, 0.1, 1000);
 camera.position.set(0, 0, 18);
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(w, h);
 document.body.appendChild(renderer.domElement);
 
-const ballGeo = new THREE.IcosahedronBufferGeometry(8, 0);
-const ballMat = new THREE.MeshBasicMaterial({ wireframe: true, color: 0xffffff });
-const mesh = new THREE.Mesh(ballGeo, ballMat);
-scene.add(mesh);
+const composer = new EffectComposer(renderer);
+const renderScene = new RenderPass(scene, camera);
+composer.addPass(renderScene);
+const bloomPass = new UnrealBloomPass(new THREE.Vector2(w, h), 3, 0, 0);
+composer.addPass(bloomPass);
+const afterImagePass = new AfterimagePass();
+afterImagePass.uniforms["damp"].value = 0.95;
+composer.addPass(afterImagePass);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 0, 0);
+controls.update();
+
+const ballGeo = new THREE.IcosahedronBufferGeometry(8, 1);
+// const ballMat = new THREE.MeshBasicMaterial({ wireframe: true, color: 0xffffff });
+// const mesh = new THREE.Mesh(ballGeo, ballMat);
+// scene.add(mesh);
 
 const colors = [];
 const color = new THREE.Color();
 const numVertices = ballGeo.attributes.position.count;
-
-
-const geo = new THREE.BufferGeometry();
-console.log(ballGeo.attributes.position);
-geo.setAttribute('position', ballGeo.attributes.position);
-geo.setAttribute('color', new THREE.Float32BufferAttribute(color, 3));
+let y;
 for (let i = 0; i < numVertices; i++) {
-    color.setHSL(1.0, 1.0, 0.5);
+    y = ballGeo.attributes.position.array[i * 3 + 1];
+    color.setHSL(0.2 + y * 0.025, 1.0, 0.5);
     colors.push(color.r, color.g, color.b);
 }
 
-const mat = new THREE.PointsMaterial({ size: 1.0, color: 0xFFFF00, vertexColors: false });
+const geo = new THREE.BufferGeometry();
+geo.setAttribute('position', ballGeo.attributes.position);
+geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+const mat = new THREE.PointsMaterial({ size: 0.25, color: 0xFFFF00, vertexColors: true });
 const points = new THREE.Points(geo, mat);
 scene.add(points);
 
 function animate() {
     requestAnimationFrame(animate);
-    mesh.rotation.x += 0.0075;
-    mesh.rotation.y += 0.005;
-    points.rotation.x += 0.0075;
+    // mesh.rotation.x += 0.0075;
+    // mesh.rotation.y += 0.005;
+    points.rotation.x += 0.010;
     points.rotation.y += 0.005;
-    renderer.render(scene, camera);
+    composer.render(scene, camera);
 }
 animate();
 
